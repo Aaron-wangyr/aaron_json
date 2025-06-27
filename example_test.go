@@ -147,28 +147,28 @@ func Example_typeChecking() {
 func Example_modifyJson() {
 	// Create a new JSON object
 	obj := NewJsonObject()
-	obj.Set("name", NewJsonString("Alice"))
-	obj.Set("age", NewJsonNumber(28))
-	obj.Set("active", NewJsonBool(true))
+	_, _ = obj.Set("name", NewJsonString("Alice"))
+	_, _ = obj.Set("age", NewJsonNumber(28))
+	_, _ = obj.Set("active", NewJsonBool(true))
 
 	// Create and add an array
 	arr := NewJsonArray()
-	arr.Append(NewJsonString("golang"))
-	arr.Append(NewJsonString("javascript"))
-	arr.Append(NewJsonString("python"))
-	obj.Set("skills", arr)
+	_, _ = arr.Append(NewJsonString("golang"))
+	_, _ = arr.Append(NewJsonString("javascript"))
+	_, _ = arr.Append(NewJsonString("python"))
+	_, _ = obj.Set("skills", arr)
 
 	// Access and modify values
 	name, _ := obj.Get("name")
 	fmt.Printf("Original name: %s\n", name.String())
 
-	obj.Set("name", NewJsonString("Bob"))
+	_, _ = obj.Set("name", NewJsonString("Bob"))
 	newName, _ := obj.Get("name")
 	fmt.Printf("Updated name: %s\n", newName.String())
 
 	// Modify array
 	skills, _ := obj.Get("skills")
-	skills.Append(NewJsonString("rust"))
+	_, _ = skills.Append(NewJsonString("rust"))
 	length, _ := skills.Length()
 	fmt.Printf("Skills count: %d\n", length)
 
@@ -183,9 +183,9 @@ func Example_arrayOperations() {
 	arr := NewJsonArray()
 
 	// Add elements
-	arr.Append(NewJsonString("first"))
-	arr.Append(NewJsonString("second"))
-	arr.Append(NewJsonString("third"))
+	_, _ = arr.Append(NewJsonString("first"))
+	_, _ = arr.Append(NewJsonString("second"))
+	_, _ = arr.Append(NewJsonString("third"))
 
 	length, _ := arr.Length()
 	fmt.Printf("Initial length: %d\n", length)
@@ -195,7 +195,7 @@ func Example_arrayOperations() {
 	fmt.Printf("First element: %s\n", first.String())
 
 	// Modify element
-	arr.SetByIndex(1, NewJsonString("modified"))
+	_, _ = arr.SetByIndex(1, NewJsonString("modified"))
 	second, _ := arr.Index(1)
 	fmt.Printf("Modified second element: %s\n", second.String())
 
@@ -219,9 +219,9 @@ func Example_objectOperations() {
 	obj := NewJsonObject()
 
 	// Set values
-	obj.Set("key1", NewJsonString("value1"))
-	obj.Set("key2", NewJsonNumber(123))
-	obj.Set("key3", NewJsonBool(false))
+	_, _ = obj.Set("key1", NewJsonString("value1"))
+	_, _ = obj.Set("key2", NewJsonNumber(123))
+	_, _ = obj.Set("key3", NewJsonBool(false))
 
 	// Get all keys
 	keys, _ := obj.Keys()
@@ -255,25 +255,25 @@ func Example_unmarshalBasicTypes() {
 	// String
 	strJson, _ := Parse(`"hello world"`)
 	var str string
-	strJson.Unmarshal(&str)
+	_ = strJson.Unmarshal(&str)
 	fmt.Printf("String: %s\n", str)
 
 	// Number to int
 	numJson, _ := Parse(`42`)
 	var num int
-	numJson.Unmarshal(&num)
+	_ = numJson.Unmarshal(&num)
 	fmt.Printf("Number: %d\n", num)
 
 	// Number to float
 	floatJson, _ := Parse(`3.14`)
 	var f float64
-	floatJson.Unmarshal(&f)
+	_ = floatJson.Unmarshal(&f)
 	fmt.Printf("Float: %.2f\n", f)
 
 	// Boolean
 	boolJson, _ := Parse(`true`)
 	var b bool
-	boolJson.Unmarshal(&b)
+	_ = boolJson.Unmarshal(&b)
 	fmt.Printf("Boolean: %t\n", b)
 
 	// Output:
@@ -340,7 +340,7 @@ func Example_unmarshalSlice() {
 	strData, _ := Parse(strJsonStr)
 
 	var fruits []string
-	strData.Unmarshal(&fruits)
+	_ = strData.Unmarshal(&fruits)
 	fmt.Printf("Fruits: %v\n", fruits)
 
 	// Output:
@@ -368,7 +368,7 @@ func Example_unmarshalMap() {
 
 	// Interface map
 	var genericMap map[string]interface{}
-	data.Unmarshal(&genericMap)
+	_ = data.Unmarshal(&genericMap)
 	fmt.Printf("Generic map: %v\n", genericMap)
 
 	// Output:
@@ -616,13 +616,13 @@ func Example_edgeCases() {
 	// Large numbers
 	largeNum, _ := Parse(`123456789.123456789`)
 	var f float64
-	largeNum.Unmarshal(&f)
+	_ = largeNum.Unmarshal(&f)
 	fmt.Printf("Large number: %.6f\n", f)
 
 	// Empty string
 	emptyStr, _ := Parse(`""`)
 	var s string
-	emptyStr.Unmarshal(&s)
+	_ = emptyStr.Unmarshal(&s)
 	fmt.Printf("Empty string length: %d\n", len(s))
 
 	// Boolean edge cases
@@ -647,15 +647,15 @@ func Example_performanceScenario() {
 	// Add multiple fields
 	for i := 0; i < 5; i++ {
 		key := fmt.Sprintf("field_%d", i)
-		obj.Set(key, NewJsonString(fmt.Sprintf("value_%d", i)))
+		_, _ = obj.Set(key, NewJsonString(fmt.Sprintf("value_%d", i)))
 	}
 
 	// Add an array with multiple elements
 	arr := NewJsonArray()
 	for i := 0; i < 5; i++ {
-		arr.Append(NewJsonNumber(float64(i * 10)))
+		_, _ = arr.Append(NewJsonNumber(float64(i * 10)))
 	}
-	obj.Set("numbers", arr)
+	_, _ = obj.Set("numbers", arr)
 
 	// Access and count elements
 	keys, _ := obj.Keys()
@@ -670,7 +670,7 @@ func Example_performanceScenario() {
 	for i := 0; i < numLength; i++ {
 		item, _ := numbers.Index(i)
 		var val float64
-		item.Unmarshal(&val)
+		_ = item.Unmarshal(&val)
 		sum += val
 	}
 	fmt.Printf("Sum of array elements: %.0f\n", sum)
@@ -704,7 +704,7 @@ func Example_roundTrip() {
 
 	// Unmarshal back to struct
 	var result Data
-	jsonData.Unmarshal(&result)
+	_ = jsonData.Unmarshal(&result)
 
 	fmt.Printf("Original name: %s\n", original.Name)
 	fmt.Printf("Result name: %s\n", result.Name)
@@ -744,22 +744,22 @@ func Example_prettyString() {
 	fmt.Println("\n=== Complex Structure ===")
 
 	obj := NewJsonObject()
-	obj.Set("name", NewJsonString("John"))
-	obj.Set("age", NewJsonNumber(30))
-	obj.Set("active", NewJsonBool(true))
+	_, _ = obj.Set("name", NewJsonString("John"))
+	_, _ = obj.Set("age", NewJsonNumber(30))
+	_, _ = obj.Set("active", NewJsonBool(true))
 
 	arr := NewJsonArray()
-	arr.Append(NewJsonString("item1"))
-	arr.Append(NewJsonNumber(123))
-	arr.Append(NewJsonBool(false))
+	_, _ = arr.Append(NewJsonString("item1"))
+	_, _ = arr.Append(NewJsonNumber(123))
+	_, _ = arr.Append(NewJsonBool(false))
 
-	obj.Set("items", arr)
+	_, _ = obj.Set("items", arr)
 
 	// Nested object
 	nested := NewJsonObject()
-	nested.Set("city", NewJsonString("New York"))
-	nested.Set("country", NewJsonString("USA"))
-	obj.Set("address", nested)
+	_, _ = nested.Set("city", NewJsonString("New York"))
+	_, _ = nested.Set("country", NewJsonString("USA"))
+	_, _ = obj.Set("address", nested)
 
 	fmt.Println(obj.PrettyString())
 
@@ -797,8 +797,8 @@ func Example_prettyStringEscaping() {
 
 	// Test in object context
 	obj := NewJsonObject()
-	obj.Set("message", str)
-	obj.Set("control_chars", NewJsonString("\b\f\n\r\t"))
+	_, _ = obj.Set("message", str)
+	_, _ = obj.Set("control_chars", NewJsonString("\b\f\n\r\t"))
 
 	fmt.Println("Object with escaped strings:")
 	fmt.Println(obj.PrettyString())

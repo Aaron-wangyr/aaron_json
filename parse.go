@@ -124,7 +124,7 @@ func parseObject(data []byte, pos int) (JsonData, int, error) {
 		}
 		pos = newPos
 
-		obj.Set(key, value)
+		_, _ = obj.Set(key, value)
 
 		// Check for end or comma
 		pos = skipWhitespace(data, pos)
@@ -177,7 +177,7 @@ func parseArray(data []byte, pos int) (JsonData, int, error) {
 		}
 		pos = newPos
 
-		arr.Append(value)
+		_, _ = arr.Append(value)
 
 		// Check for end or comma
 		pos = skipWhitespace(data, pos)

@@ -71,7 +71,7 @@ func marshalSlice(rv reflect.Value) (JsonData, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal array element at index %d: %v", i, err)
 		}
-		arr.Append(elem)
+		_, _ = arr.Append(elem)
 	}
 	
 	return arr, nil
@@ -95,7 +95,7 @@ func marshalMap(rv reflect.Value) (JsonData, error) {
 			return nil, fmt.Errorf("failed to marshal map value for key '%s': %v", keyStr, err)
 		}
 		
-		obj.Set(keyStr, jsonValue)
+		_, _ = obj.Set(keyStr, jsonValue)
 	}
 	
 	return obj, nil
@@ -132,7 +132,7 @@ func marshalStruct(rv reflect.Value) (JsonData, error) {
 			return nil, fmt.Errorf("failed to marshal struct field '%s': %v", field.Name, err)
 		}
 		
-		obj.Set(jsonFieldName, jsonValue)
+		_, _ = obj.Set(jsonFieldName, jsonValue)
 	}
 	
 	return obj, nil
