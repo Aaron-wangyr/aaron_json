@@ -98,10 +98,10 @@ func (ja *JsonArrayImpl) Unmarshal(v interface{}) error {
 func (ja *JsonArrayImpl) unmarshalToSlice(rv reflect.Value) error {
 	sliceType := rv.Type()
 	elemType := sliceType.Elem()
-	
+
 	// Create a new slice with the same length as our data
 	newSlice := reflect.MakeSlice(sliceType, len(ja.data), len(ja.data))
-	
+
 	for i, item := range ja.data {
 		elem := reflect.New(elemType)
 		if err := item.Unmarshal(elem.Interface()); err != nil {
@@ -109,7 +109,7 @@ func (ja *JsonArrayImpl) unmarshalToSlice(rv reflect.Value) error {
 		}
 		newSlice.Index(i).Set(elem.Elem())
 	}
-	
+
 	rv.Set(newSlice)
 	return nil
 }
@@ -118,11 +118,11 @@ func (ja *JsonArrayImpl) unmarshalToArray(rv reflect.Value) error {
 	arrayType := rv.Type()
 	arrayLen := arrayType.Len()
 	elemType := arrayType.Elem()
-	
+
 	if len(ja.data) > arrayLen {
 		return fmt.Errorf("array length mismatch: JSON array has %d elements but target array has capacity %d", len(ja.data), arrayLen)
 	}
-	
+
 	for i, item := range ja.data {
 		elem := reflect.New(elemType)
 		if err := item.Unmarshal(elem.Interface()); err != nil {
@@ -130,6 +130,40 @@ func (ja *JsonArrayImpl) unmarshalToArray(rv reflect.Value) error {
 		}
 		rv.Index(i).Set(elem.Elem())
 	}
-	
+
 	return nil
+}
+
+// PrettyString returns a pretty-printed JSON array
+func (ja *JsonArrayImpl) PrettyString() string {
+	return ja.prettyStringWithIndent(0)
+}
+
+// prettyStringWithIndent returns a pretty-printed JSON array with specified indentation
+func (ja *JsonArrayImpl) prettyStringWithIndent(indent int) string {
+	if len(ja.data) == 0 {
+		return "[]"
+	}
+
+	indentStr := ""
+	for i := 0; i < indent; i++ {
+		indentStr += "  "
+	}
+	nextIndentStr := indentStr + "  "
+
+	result := "[\n"
+	for i, item := range ja.data {
+		result += nextIndentStr
+		if prettyItem, ok := item.(interface{ prettyStringWithIndent(int) string }); ok {
+			result += prettyItem.prettyStringWithIndent(indent + 1)
+		} else {
+			result += item.PrettyString()
+		}
+		if i < len(ja.data)-1 {
+			result += ","
+		}
+		result += "\n"
+	}
+	result += indentStr + "]"
+	return result
 }

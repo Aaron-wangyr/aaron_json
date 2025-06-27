@@ -42,6 +42,8 @@ type JsonData interface {
 	Unmarshal(v interface{}) error
 	// UnmarshalTo unmarshals the JSON data into the provided interface.
 	UnmarshalTo(v interface{}) error
+
+	PrettyString() string
 }
 
 // JsonType represents the type of JSON data

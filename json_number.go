@@ -28,6 +28,16 @@ func (jn *JsonNumber) Type() JsonType {
 	return TypeNumber
 }
 
+// AsInt returns the number as an integer.
+func (jn *JsonNumber) AsInt() (int, error) {
+	return int(jn.data), nil
+}
+
+// AsFloat returns the number as a float64.
+func (jn *JsonNumber) AsFloat() (float64, error) {
+	return jn.data, nil
+}
+
 // Unmarshal implementation for JsonNumber
 func (jn *JsonNumber) Unmarshal(v interface{}) error {
 	if v == nil {
@@ -65,4 +75,13 @@ func (jn *JsonNumber) Unmarshal(v interface{}) error {
 // UnmarshalTo is an alias for Unmarshal
 func (jn *JsonNumber) UnmarshalTo(v interface{}) error {
 	return jn.Unmarshal(v)
+}
+
+// PrettyString returns a pretty-printed JSON number
+func (jn *JsonNumber) PrettyString() string {
+	// Check if it's an integer value
+	if jn.data == float64(int64(jn.data)) {
+		return fmt.Sprintf("%.0f", jn.data)
+	}
+	return fmt.Sprintf("%g", jn.data)
 }

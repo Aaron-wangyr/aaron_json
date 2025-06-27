@@ -59,12 +59,34 @@ func (jo *JsonObjectImpl) Keys() ([]string, error) {
 	return jo.sortedkeys, nil
 }
 
+// AsObject returns itself as JsonObject.
+func (jo *JsonObjectImpl) AsObject() (JsonObject, error) {
+	return jo, nil
+}
+
 func (jo *JsonObjectImpl) updateKeys() {
 	jo.sortedkeys = make([]string, 0, len(jo.data))
 	for key := range jo.data {
 		jo.sortedkeys = append(jo.sortedkeys, key)
 	}
 	sort.Strings(jo.sortedkeys) // Keep keys sorted
+}
+
+func (jo *JsonObjectImpl) String() string {
+	if len(jo.data) == 0 {
+		return "{}"
+	}
+
+	result := "{"
+	for i, key := range jo.sortedkeys {
+		if i > 0 {
+			result += ", "
+		}
+		value := jo.data[key]
+		result += fmt.Sprintf("%q: %s", key, value.String())
+	}
+	result += "}"
+	return result
 }
 
 func (jo *JsonObjectImpl) Unmarshal(v interface{}) error {
@@ -172,4 +194,43 @@ func (jo *JsonObjectImpl) unmarshalToStruct(rv reflect.Value) error {
 	}
 
 	return nil
+}
+
+// PrettyString returns a pretty-printed JSON object
+func (jo *JsonObjectImpl) PrettyString() string {
+	return jo.prettyStringWithIndent(0)
+}
+
+// prettyStringWithIndent returns a pretty-printed JSON object with specified indentation
+func (jo *JsonObjectImpl) prettyStringWithIndent(indent int) string {
+	if len(jo.data) == 0 {
+		return "{}"
+	}
+
+	indentStr := ""
+	for i := 0; i < indent; i++ {
+		indentStr += "  "
+	}
+	nextIndentStr := indentStr + "  "
+
+	result := "{\n"
+	keys, _ := jo.Keys()
+	for i, key := range keys {
+		result += nextIndentStr
+		result += fmt.Sprintf("\"%s\": ", escapeString(key))
+
+		value := jo.data[key]
+		if prettyItem, ok := value.(interface{ prettyStringWithIndent(int) string }); ok {
+			result += prettyItem.prettyStringWithIndent(indent + 1)
+		} else {
+			result += value.PrettyString()
+		}
+
+		if i < len(keys)-1 {
+			result += ","
+		}
+		result += "\n"
+	}
+	result += indentStr + "}"
+	return result
 }

@@ -18,6 +18,24 @@ func NewJsonBool(value bool) *JsonBool {
 	}
 }
 
+// String returns the string representation of the boolean.
+func (jb *JsonBool) String() string {
+	if jb.data {
+		return "true"
+	}
+	return "false"
+}
+
+// Type returns the type of the JSON data.
+func (jb *JsonBool) Type() JsonType {
+	return TypeBool
+}
+
+// AsBool returns the boolean value.
+func (jb *JsonBool) AsBool() (bool, error) {
+	return jb.data, nil
+}
+
 // Unmarshal implementation for JsonBool
 func (jb *JsonBool) Unmarshal(v interface{}) error {
 	if v == nil {
@@ -49,4 +67,12 @@ func (jb *JsonBool) Unmarshal(v interface{}) error {
 // UnmarshalTo is an alias for Unmarshal
 func (jb *JsonBool) UnmarshalTo(v interface{}) error {
 	return jb.Unmarshal(v)
+}
+
+// PrettyString returns a pretty-printed JSON boolean
+func (jb *JsonBool) PrettyString() string {
+	if jb.data {
+		return "true"
+	}
+	return "false"
 }

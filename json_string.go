@@ -101,3 +101,8 @@ func (js *JsonString) Unmarshal(v interface{}) error {
 func (js *JsonString) UnmarshalTo(v interface{}) error {
 	return js.Unmarshal(v)
 }
+
+// PrettyString returns a pretty-printed JSON string with proper escaping
+func (js *JsonString) PrettyString() string {
+	return fmt.Sprintf("\"%s\"", escapeString(js.data))
+}

@@ -129,3 +129,15 @@ func (n *jsonNode) Unmarshal(v interface{}) error {
 func (n *jsonNode) UnmarshalTo(v interface{}) error {
 	return n.Unmarshal(v)
 }
+
+// PrettyString returns a pretty-printed string representation of the JSON data.
+// This is the default implementation for jsonNode base class.
+func (n *jsonNode) PrettyString() string {
+	// Default implementation - specific types should override this
+	switch n.nodeType {
+	case TypeNull:
+		return "null"
+	default:
+		return n.String()
+	}
+}

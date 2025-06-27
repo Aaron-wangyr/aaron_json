@@ -48,3 +48,8 @@ func (jn *JsonNull) Unmarshal(v interface{}) error {
 func (jn *JsonNull) UnmarshalTo(v interface{}) error {
 	return jn.Unmarshal(v)
 }
+
+// PrettyString returns a pretty-printed JSON null
+func (jn *JsonNull) PrettyString() string {
+	return "null"
+}
