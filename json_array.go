@@ -5,83 +5,93 @@ import (
 	"reflect"
 )
 
-type JsonArray interface {
-	JsonData
-}
-
-type JsonArrayImpl struct {
+type JsonArray struct {
 	jsonNode
-	data []JsonData
+	data []JsonValue
 }
 
 // NewJsonArray creates a new JsonArray instance.
-func NewJsonArray() JsonArray {
-	return &JsonArrayImpl{
-		jsonNode: jsonNode{nodeType: TypeArray},
-		data:     make([]JsonData, 0),
+func NewJsonArray() *JsonArray {
+	return &JsonArray{
+		jsonNode: jsonNode{},
+		data:     make([]JsonValue, 0),
 	}
 }
 
-func (ja *JsonArrayImpl) Index(i int) (JsonData, error) {
-	if i < 0 || i >= len(ja.data) {
-		return nil, nil // Index out of bounds, return nil
-	}
-	return ja.data[i], nil
+func (array *JsonArray) AsArray() (*JsonArray, error) {
+	return array, nil
 }
 
-func (ja *JsonArrayImpl) SetByIndex(index int, value JsonData) (JsonData, error) {
-	if index < 0 || index >= len(ja.data) {
-		return nil, nil // Index out of bounds, return nil
+func (array *JsonArray) IsArray() bool {
+	return true
+}
+
+func (array *JsonArray) GetSlice() ([]JsonValue, error) {
+	if array.data == nil {
+		return nil, fmt.Errorf("array is nil")
 	}
-	ja.data[index] = value
+	return array.data, nil
+}
+
+func (array *JsonArray) Index(i int) (JsonValue, error) {
+	if i < 0 || i >= len(array.data) {
+		return nil, ErrIndexOutOfBounds
+	}
+	return array.data[i], nil
+}
+
+func (array *JsonArray) SetByIndex(index int, value JsonValue) (JsonValue, error) {
+	if index < 0 || index >= len(array.data) {
+		return nil, ErrIndexOutOfBounds
+	}
+	array.data[index] = value
 	return value, nil
 }
 
-func (ja *JsonArrayImpl) Append(value JsonData) (JsonData, error) {
+func (array *JsonArray) Append(value JsonValue) (JsonValue, error) {
 	if value == nil {
-		return nil, nil // Cannot append nil value
+		return nil, ErrNilValueAppend
 	}
-	ja.data = append(ja.data, value)
+	array.data = append(array.data, value)
 	return value, nil
 }
 
-func (ja *JsonArrayImpl) RemoveByIndex(index int) (JsonData, error) {
-	if index < 0 || index >= len(ja.data) {
-		return nil, nil // Index out of bounds, return nil
+func (array *JsonArray) RemoveByIndex(index int) (JsonValue, error) {
+	if index < 0 || index >= len(array.data) {
+		return nil, ErrIndexOutOfBounds
 	}
-	value := ja.data[index]
-	ja.data = append(ja.data[:index], ja.data[index+1:]...)
+	value := array.data[index]
+	array.data = append(array.data[:index], array.data[index+1:]...)
 	return value, nil
 }
 
-func (ja *JsonArrayImpl) Length() (int, error) {
-	return len(ja.data), nil
+func (array *JsonArray) Length() (int, error) {
+	return len(array.data), nil
 }
 
-func (ja *JsonArrayImpl) Unmarshal(v interface{}) error {
+func (array *JsonArray) Unmarshal(v interface{}) error {
 	if v == nil {
-		return fmt.Errorf("cannot unmarshal into nil interface")
+		return ErrUnmarshalNilInterface
 	}
 
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr {
-		return fmt.Errorf("unmarshal target must be a pointer")
+		return ErrUnmarshalTargetNotPointer
 	}
 
 	rv = rv.Elem()
 	if !rv.CanSet() {
-		return fmt.Errorf("unmarshal target cannot be set")
+		return ErrUnmarshalTargetNotSettable
 	}
-
 	switch rv.Kind() {
 	case reflect.Slice:
-		return ja.unmarshalToSlice(rv)
+		return array.unmarshalToSlice(rv)
 	case reflect.Array:
-		return ja.unmarshalToArray(rv)
+		return array.unmarshalToArray(rv)
 	case reflect.Interface:
 		// For interface{}, convert to []interface{}
-		slice := make([]interface{}, len(ja.data))
-		for i, item := range ja.data {
+		slice := make([]interface{}, len(array.data))
+		for i, item := range array.data {
 			var elem interface{}
 			if err := item.Unmarshal(&elem); err != nil {
 				return fmt.Errorf("failed to unmarshal array element at index %d: %v", i, err)
@@ -91,18 +101,18 @@ func (ja *JsonArrayImpl) Unmarshal(v interface{}) error {
 		rv.Set(reflect.ValueOf(slice))
 		return nil
 	default:
-		return fmt.Errorf("cannot unmarshal array into %v", rv.Type())
+		return ErrUnmarshalTargetTypeMismatch
 	}
 }
 
-func (ja *JsonArrayImpl) unmarshalToSlice(rv reflect.Value) error {
+func (array *JsonArray) unmarshalToSlice(rv reflect.Value) error {
 	sliceType := rv.Type()
 	elemType := sliceType.Elem()
 
 	// Create a new slice with the same length as our data
-	newSlice := reflect.MakeSlice(sliceType, len(ja.data), len(ja.data))
+	newSlice := reflect.MakeSlice(sliceType, len(array.data), len(array.data))
 
-	for i, item := range ja.data {
+	for i, item := range array.data {
 		elem := reflect.New(elemType)
 		if err := item.Unmarshal(elem.Interface()); err != nil {
 			return fmt.Errorf("failed to unmarshal array element at index %d: %v", i, err)
@@ -114,16 +124,16 @@ func (ja *JsonArrayImpl) unmarshalToSlice(rv reflect.Value) error {
 	return nil
 }
 
-func (ja *JsonArrayImpl) unmarshalToArray(rv reflect.Value) error {
+func (array *JsonArray) unmarshalToArray(rv reflect.Value) error {
 	arrayType := rv.Type()
 	arrayLen := arrayType.Len()
 	elemType := arrayType.Elem()
 
-	if len(ja.data) > arrayLen {
-		return fmt.Errorf("array length mismatch: JSON array has %d elements but target array has capacity %d", len(ja.data), arrayLen)
+	if len(array.data) > arrayLen {
+		return fmt.Errorf("array length mismatch: JSON array has %d elements but target array has capacity %d", len(array.data), arrayLen)
 	}
 
-	for i, item := range ja.data {
+	for i, item := range array.data {
 		elem := reflect.New(elemType)
 		if err := item.Unmarshal(elem.Interface()); err != nil {
 			return fmt.Errorf("failed to unmarshal array element at index %d: %v", i, err)
@@ -134,14 +144,36 @@ func (ja *JsonArrayImpl) unmarshalToArray(rv reflect.Value) error {
 	return nil
 }
 
+func (array *JsonArray) String() string {
+	if len(array.data) == 0 {
+		return "[]"
+	}
+
+	result := "["
+	for i, item := range array.data {
+		if i > 0 {
+			result += ", "
+		}
+		
+		// Format the value based on its type
+		if _, ok := item.(*JsonString); ok {
+			result += fmt.Sprintf("\"%s\"", escapeString(item.String()))
+		} else {
+			result += item.String()
+		}
+	}
+	result += "]"
+	return result
+}
+
 // PrettyString returns a pretty-printed JSON array
-func (ja *JsonArrayImpl) PrettyString() string {
-	return ja.prettyStringWithIndent(0)
+func (array *JsonArray) PrettyString() string {
+	return array.prettyStringWithIndent(0)
 }
 
 // prettyStringWithIndent returns a pretty-printed JSON array with specified indentation
-func (ja *JsonArrayImpl) prettyStringWithIndent(indent int) string {
-	if len(ja.data) == 0 {
+func (array *JsonArray) prettyStringWithIndent(indent int) string {
+	if len(array.data) == 0 {
 		return "[]"
 	}
 
@@ -152,14 +184,14 @@ func (ja *JsonArrayImpl) prettyStringWithIndent(indent int) string {
 	nextIndentStr := indentStr + "  "
 
 	result := "[\n"
-	for i, item := range ja.data {
+	for i, item := range array.data {
 		result += nextIndentStr
 		if prettyItem, ok := item.(interface{ prettyStringWithIndent(int) string }); ok {
 			result += prettyItem.prettyStringWithIndent(indent + 1)
 		} else {
 			result += item.PrettyString()
 		}
-		if i < len(ja.data)-1 {
+		if i < len(array.data)-1 {
 			result += ","
 		}
 		result += "\n"

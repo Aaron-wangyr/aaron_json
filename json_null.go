@@ -5,6 +5,8 @@ import (
 	"reflect"
 )
 
+var JSON_NULL = NewJsonNull()
+
 type JsonNull struct {
 	jsonNode
 }
@@ -12,8 +14,22 @@ type JsonNull struct {
 // NewJsonNull creates a new JsonNull instance.
 func NewJsonNull() *JsonNull {
 	return &JsonNull{
-		jsonNode: jsonNode{nodeType: TypeNull},
+		jsonNode: jsonNode{},
 	}
+}
+
+func (jn *JsonNull) IsNull() bool {
+	return true
+}
+
+// String returns the string representation of the JSON null.
+func (jn *JsonNull) String() string {
+	return "null"
+}
+
+// PrettyString returns a pretty-printed JSON null
+func (jn *JsonNull) PrettyString() string {
+	return "null"
 }
 
 // Unmarshal implementation for JsonNull
@@ -32,24 +48,11 @@ func (jn *JsonNull) Unmarshal(v interface{}) error {
 		return fmt.Errorf("unmarshal target cannot be set")
 	}
 
-	// For null values, we set the target to its zero value or nil for pointers/interfaces
 	switch rv.Kind() {
-	case reflect.Ptr, reflect.Interface, reflect.Slice, reflect.Map, reflect.Chan, reflect.Func:
+	case reflect.Ptr, reflect.Interface, reflect.Slice, reflect.Map:
 		rv.Set(reflect.Zero(rv.Type()))
 		return nil
 	default:
-		// For non-nullable types, set to zero value
-		rv.Set(reflect.Zero(rv.Type()))
-		return nil
+		return fmt.Errorf("cannot unmarshal null into %v", rv.Type())
 	}
-}
-
-// UnmarshalTo is an alias for Unmarshal
-func (jn *JsonNull) UnmarshalTo(v interface{}) error {
-	return jn.Unmarshal(v)
-}
-
-// PrettyString returns a pretty-printed JSON null
-func (jn *JsonNull) PrettyString() string {
-	return "null"
 }

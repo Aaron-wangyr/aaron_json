@@ -5,9 +5,9 @@ import (
 	"reflect"
 )
 
-// Marshal converts a Go value to JsonData.
+// Marshal converts a Go value to JsonValue.
 // It supports structs, maps, slices, arrays, and basic types.
-func Marshal(v interface{}) (JsonData, error) {
+func Marshal(v interface{}) (JsonValue, error) {
 	if v == nil {
 		return NewJsonNull(), nil
 	}
@@ -16,8 +16,8 @@ func Marshal(v interface{}) (JsonData, error) {
 }
 
 // marshalValue is the internal function that handles the conversion
-// of reflect.Value to JsonData based on the value's type.
-func marshalValue(rv reflect.Value) (JsonData, error) {
+// of reflect.Value to JsonValue based on the value's type.
+func marshalValue(rv reflect.Value) (JsonValue, error) {
 	// Handle pointers by dereferencing them
 	for rv.Kind() == reflect.Ptr {
 		if rv.IsNil() {
@@ -31,13 +31,13 @@ func marshalValue(rv reflect.Value) (JsonData, error) {
 		return NewJsonBool(rv.Bool()), nil
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return NewJsonNumber(float64(rv.Int())), nil
+		return NewJsonInt(float64(rv.Int())), nil
 
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return NewJsonNumber(float64(rv.Uint())), nil
+		return NewJsonInt(float64(rv.Uint())), nil
 
 	case reflect.Float32, reflect.Float64:
-		return NewJsonNumber(rv.Float()), nil
+		return NewJsonFloat(rv.Float()), nil
 
 	case reflect.String:
 		return NewJsonString(rv.String()), nil
@@ -63,9 +63,9 @@ func marshalValue(rv reflect.Value) (JsonData, error) {
 }
 
 // marshalSlice converts a slice or array to JsonArray
-func marshalSlice(rv reflect.Value) (JsonData, error) {
+func marshalSlice(rv reflect.Value) (JsonValue, error) {
 	arr := NewJsonArray()
-	
+
 	for i := 0; i < rv.Len(); i++ {
 		elem, err := marshalValue(rv.Index(i))
 		if err != nil {
@@ -73,68 +73,68 @@ func marshalSlice(rv reflect.Value) (JsonData, error) {
 		}
 		_, _ = arr.Append(elem)
 	}
-	
+
 	return arr, nil
 }
 
 // marshalMap converts a map to JsonObject
-func marshalMap(rv reflect.Value) (JsonData, error) {
+func marshalMap(rv reflect.Value) (JsonValue, error) {
 	// Only support maps with string keys
 	if rv.Type().Key().Kind() != reflect.String {
 		return nil, fmt.Errorf("only maps with string keys are supported")
 	}
 
 	obj := NewJsonObject()
-	
+
 	for _, key := range rv.MapKeys() {
 		keyStr := key.String()
 		value := rv.MapIndex(key)
-		
+
 		jsonValue, err := marshalValue(value)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal map value for key '%s': %v", keyStr, err)
 		}
-		
+
 		_, _ = obj.Set(keyStr, jsonValue)
 	}
-	
+
 	return obj, nil
 }
 
 // marshalStruct converts a struct to JsonObject
-func marshalStruct(rv reflect.Value) (JsonData, error) {
+func marshalStruct(rv reflect.Value) (JsonValue, error) {
 	obj := NewJsonObject()
 	structType := rv.Type()
-	
+
 	for i := 0; i < structType.NumField(); i++ {
 		field := structType.Field(i)
 		fieldValue := rv.Field(i)
-		
+
 		// Skip unexported fields
 		if !fieldValue.CanInterface() {
 			continue
 		}
-		
+
 		// Get the JSON field name from struct tag or use field name
 		jsonFieldName := getJsonFieldName(field)
 		if jsonFieldName == "-" {
 			continue // Skip fields marked with json:"-"
 		}
-		
+
 		// Check for omitempty tag
 		omitEmpty := hasOmitEmptyTag(field)
 		if omitEmpty && isEmptyValue(fieldValue) {
 			continue
 		}
-		
+
 		jsonValue, err := marshalValue(fieldValue)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal struct field '%s': %v", field.Name, err)
 		}
-		
+
 		_, _ = obj.Set(jsonFieldName, jsonValue)
 	}
-	
+
 	return obj, nil
 }
 
@@ -144,14 +144,14 @@ func getJsonFieldName(field reflect.StructField) string {
 	if tag == "" {
 		return field.Name
 	}
-	
+
 	// Handle json:",omitempty" format
 	for i, c := range tag {
 		if c == ',' {
 			return tag[:i]
 		}
 	}
-	
+
 	return tag
 }
 
@@ -167,7 +167,7 @@ func containsOmitEmpty(tag string) bool {
 	if tag == "omitempty" {
 		return true
 	}
-	
+
 	// Check for ",omitempty" pattern
 	omitEmptyTag := ",omitempty"
 	if len(tag) >= len(omitEmptyTag) {
@@ -177,7 +177,7 @@ func containsOmitEmpty(tag string) bool {
 			}
 		}
 	}
-	
+
 	return false
 }
 

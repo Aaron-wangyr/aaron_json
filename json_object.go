@@ -6,34 +6,68 @@ import (
 	"sort"
 )
 
-type JsonObject interface {
-	JsonData
-}
-
-type JsonObjectImpl struct {
+type JsonObject struct {
 	jsonNode
-	data       map[string]JsonData
+	data       map[string]JsonValue
 	sortedkeys []string
 }
 
-// Constructor for JsonObject
-func NewJsonObject() JsonObject {
+func NewJsonObject() *JsonObject {
 	keys := make([]string, 0)
-	return &JsonObjectImpl{
-		jsonNode:   jsonNode{nodeType: TypeObject},
-		data:       make(map[string]JsonData),
+	return &JsonObject{
+		jsonNode:   jsonNode{},
+		data:       make(map[string]JsonValue),
 		sortedkeys: keys,
 	}
 }
 
-func (jo *JsonObjectImpl) Get(key string) (JsonData, error) {
-	if value, exists := jo.data[key]; exists {
-		return value, nil
-	}
-	return nil, fmt.Errorf("key '%s' not found in object", key)
+func (jo *JsonObject) AsObject() (*JsonObject, error) {
+	return jo, nil
 }
 
-func (jo *JsonObjectImpl) Set(key string, value JsonData) (JsonData, error) {
+func (jo *JsonObject) IsObject() bool {
+	return true
+}
+
+func (jo *JsonObject) Get(key ...string) (JsonValue, error) {
+	if len(key) == 0 {
+		return nil, fmt.Errorf("no key provided for Get operation")
+	}
+	
+	if len(key) == 1 {
+		// Single key, return the value directly
+		if value, exists := jo.data[key[0]]; exists {
+			return value, nil
+		}
+		return nil, fmt.Errorf("key '%s' not found in object", key[0])
+	}
+	
+	// Multiple keys, navigate through nested objects
+	if value, exists := jo.data[key[0]]; exists {
+		if !value.IsObject() {
+			return nil, fmt.Errorf("value for key '%s' is not an object, cannot match key path", key[0])
+		}
+		return value.Get(key[1:]...)
+	}
+	
+	return nil, fmt.Errorf("key '%s' not found in object", key[0])
+}
+
+func (jo *JsonObject) GetMap() (map[string]JsonValue, error) {
+	if len(jo.data) == 0 {
+		return nil, fmt.Errorf("object is empty, cannot return map")
+	}
+	result := make(map[string]JsonValue, len(jo.data))
+	for key, value := range jo.data {
+		if value == nil {
+			return nil, fmt.Errorf("value for key '%s' is nil, cannot return map", key)
+		}
+		result[key] = value
+	}
+	return result, nil
+}
+
+func (jo *JsonObject) Set(key string, value JsonValue) (JsonValue, error) {
 	if value == nil {
 		return nil, fmt.Errorf("cannot set nil value for key '%s'", key)
 	}
@@ -42,7 +76,7 @@ func (jo *JsonObjectImpl) Set(key string, value JsonData) (JsonData, error) {
 	return value, nil
 }
 
-func (jo *JsonObjectImpl) Remove(key string) (JsonData, error) {
+func (jo *JsonObject) Remove(key string) (JsonValue, error) {
 	if value, exists := jo.data[key]; exists {
 		delete(jo.data, key)
 		jo.updateKeys()
@@ -51,20 +85,15 @@ func (jo *JsonObjectImpl) Remove(key string) (JsonData, error) {
 	return nil, nil // Key not found, return nil
 }
 
-func (jo *JsonObjectImpl) Length() (int, error) {
+func (jo *JsonObject) Length() (int, error) {
 	return len(jo.data), nil
 }
 
-func (jo *JsonObjectImpl) Keys() ([]string, error) {
+func (jo *JsonObject) Keys() ([]string, error) {
 	return jo.sortedkeys, nil
 }
 
-// AsObject returns itself as JsonObject.
-func (jo *JsonObjectImpl) AsObject() (JsonObject, error) {
-	return jo, nil
-}
-
-func (jo *JsonObjectImpl) updateKeys() {
+func (jo *JsonObject) updateKeys() {
 	jo.sortedkeys = make([]string, 0, len(jo.data))
 	for key := range jo.data {
 		jo.sortedkeys = append(jo.sortedkeys, key)
@@ -72,7 +101,7 @@ func (jo *JsonObjectImpl) updateKeys() {
 	sort.Strings(jo.sortedkeys) // Keep keys sorted
 }
 
-func (jo *JsonObjectImpl) String() string {
+func (jo *JsonObject) String() string {
 	if len(jo.data) == 0 {
 		return "{}"
 	}
@@ -83,13 +112,22 @@ func (jo *JsonObjectImpl) String() string {
 			result += ", "
 		}
 		value := jo.data[key]
-		result += fmt.Sprintf("%q: %s", key, value.String())
+		
+		// Format the value based on its type
+		var valueStr string
+		if _, ok := value.(*JsonString); ok {
+			valueStr = fmt.Sprintf("\"%s\"", escapeString(value.String()))
+		} else {
+			valueStr = value.String()
+		}
+		
+		result += fmt.Sprintf("%q: %s", key, valueStr)
 	}
 	result += "}"
 	return result
 }
 
-func (jo *JsonObjectImpl) Unmarshal(v interface{}) error {
+func (jo *JsonObject) Unmarshal(v interface{}) error {
 	if v == nil {
 		return fmt.Errorf("cannot unmarshal into nil interface")
 	}
@@ -126,7 +164,7 @@ func (jo *JsonObjectImpl) Unmarshal(v interface{}) error {
 	}
 }
 
-func (jo *JsonObjectImpl) unmarshalToMap(rv reflect.Value) error {
+func (jo *JsonObject) unmarshalToMap(rv reflect.Value) error {
 	mapType := rv.Type()
 	keyType := mapType.Key()
 	valueType := mapType.Elem()
@@ -154,7 +192,7 @@ func (jo *JsonObjectImpl) unmarshalToMap(rv reflect.Value) error {
 	return nil
 }
 
-func (jo *JsonObjectImpl) unmarshalToStruct(rv reflect.Value) error {
+func (jo *JsonObject) unmarshalToStruct(rv reflect.Value) error {
 	structType := rv.Type()
 
 	for i := 0; i < structType.NumField(); i++ {
@@ -197,12 +235,12 @@ func (jo *JsonObjectImpl) unmarshalToStruct(rv reflect.Value) error {
 }
 
 // PrettyString returns a pretty-printed JSON object
-func (jo *JsonObjectImpl) PrettyString() string {
+func (jo *JsonObject) PrettyString() string {
 	return jo.prettyStringWithIndent(0)
 }
 
 // prettyStringWithIndent returns a pretty-printed JSON object with specified indentation
-func (jo *JsonObjectImpl) prettyStringWithIndent(indent int) string {
+func (jo *JsonObject) prettyStringWithIndent(indent int) string {
 	if len(jo.data) == 0 {
 		return "{}"
 	}

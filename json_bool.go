@@ -5,6 +5,9 @@ import (
 	"reflect"
 )
 
+var JSON_BOOL_TRUE = NewJsonBool(true)
+var JSON_BOOL_FALSE = NewJsonBool(false)
+
 type JsonBool struct {
 	jsonNode
 	data bool
@@ -13,9 +16,38 @@ type JsonBool struct {
 // NewJsonBool creates a new JsonBool instance.
 func NewJsonBool(value bool) *JsonBool {
 	return &JsonBool{
-		jsonNode: jsonNode{nodeType: TypeBool},
+		jsonNode: jsonNode{},
 		data:     value,
 	}
+}
+
+func (jb *JsonBool) IsBool() bool {
+	return true
+}
+
+func (jb *JsonBool) AsBool() (bool, error) {
+	return jb.data, nil
+}
+
+func (jb *JsonBool) AsString() (string, error) {
+	if jb.data {
+		return "true", nil
+	}
+	return "false", nil
+}
+
+func (jb *JsonBool) AsInt() (int, error) {
+	if jb.data {
+		return 1, nil
+	}
+	return 0, nil
+}
+
+func (jb *JsonBool) AsFloat() (float64, error) {
+	if jb.data {
+		return 1.0, nil
+	}
+	return 0.0, nil
 }
 
 // String returns the string representation of the boolean.
@@ -26,14 +58,12 @@ func (jb *JsonBool) String() string {
 	return "false"
 }
 
-// Type returns the type of the JSON data.
-func (jb *JsonBool) Type() JsonType {
-	return TypeBool
-}
-
-// AsBool returns the boolean value.
-func (jb *JsonBool) AsBool() (bool, error) {
-	return jb.data, nil
+// PrettyString returns a pretty-printed JSON boolean
+func (jb *JsonBool) PrettyString() string {
+	if jb.data {
+		return "true"
+	}
+	return "false"
 }
 
 // Unmarshal implementation for JsonBool
@@ -62,17 +92,4 @@ func (jb *JsonBool) Unmarshal(v interface{}) error {
 	default:
 		return fmt.Errorf("cannot unmarshal bool into %v", rv.Type())
 	}
-}
-
-// UnmarshalTo is an alias for Unmarshal
-func (jb *JsonBool) UnmarshalTo(v interface{}) error {
-	return jb.Unmarshal(v)
-}
-
-// PrettyString returns a pretty-printed JSON boolean
-func (jb *JsonBool) PrettyString() string {
-	if jb.data {
-		return "true"
-	}
-	return "false"
 }

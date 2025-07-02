@@ -1,7 +1,6 @@
 package aaronjson
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -15,30 +14,19 @@ type JsonString struct {
 // Constructor
 func NewJsonString(value string) *JsonString {
 	return &JsonString{
-		jsonNode: jsonNode{nodeType: TypeString},
+		jsonNode: jsonNode{},
 		data:     value,
 	}
 }
 
-// JsonValue interface methods
 func (js *JsonString) String() string {
 	return js.data
 }
 
-func (js *JsonString) Type() JsonType {
-	return TypeString
+func (js *JsonString) IsString() bool {
+	return true
 }
 
-// JsonData interface methods - Get/Index operations
-func (js *JsonString) Get(key string) (JsonData, error) {
-	return nil, errors.New("cannot get property from string")
-}
-
-func (js *JsonString) Index(i int) (JsonData, error) {
-	return nil, errors.New("cannot index string")
-}
-
-// Type conversion methods
 func (js *JsonString) AsString() (string, error) {
 	return js.data, nil
 }

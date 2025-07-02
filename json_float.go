@@ -5,41 +5,40 @@ import (
 	"reflect"
 )
 
-type JsonNumber struct {
+type JsonFloat struct {
 	jsonNode
 	data float64
 }
 
-// NewJsonNumber creates a new JsonNumber instance.
-func NewJsonNumber(value float64) *JsonNumber {
-	return &JsonNumber{
-		jsonNode: jsonNode{nodeType: TypeNumber},
+// NewJsonFloat creates a new JsonFloat instance.
+func NewJsonFloat(value float64) *JsonFloat {
+	return &JsonFloat{
+		jsonNode: jsonNode{},
 		data:     value,
 	}
 }
 
+func (jn *JsonFloat) IsFloat() bool {
+	return true
+}
+
 // String returns the string representation of the number.
-func (jn *JsonNumber) String() string {
+func (jn *JsonFloat) String() string {
 	return fmt.Sprintf("%f", jn.data)
 }
 
-// Type returns the type of the JSON data.
-func (jn *JsonNumber) Type() JsonType {
-	return TypeNumber
-}
-
 // AsInt returns the number as an integer.
-func (jn *JsonNumber) AsInt() (int, error) {
-	return int(jn.data), nil
+func (jn *JsonFloat) AsInt() (int, error) {
+	return 0, fmt.Errorf("cannot convert float %f to int", jn.data)
 }
 
 // AsFloat returns the number as a float64.
-func (jn *JsonNumber) AsFloat() (float64, error) {
+func (jn *JsonFloat) AsFloat() (float64, error) {
 	return jn.data, nil
 }
 
-// Unmarshal implementation for JsonNumber
-func (jn *JsonNumber) Unmarshal(v interface{}) error {
+// Unmarshal implementation for JsonFloat
+func (jn *JsonFloat) Unmarshal(v interface{}) error {
 	if v == nil {
 		return fmt.Errorf("cannot unmarshal into nil interface")
 	}
@@ -68,20 +67,17 @@ func (jn *JsonNumber) Unmarshal(v interface{}) error {
 		rv.Set(reflect.ValueOf(jn.data))
 		return nil
 	default:
-		return fmt.Errorf("cannot unmarshal number into %v", rv.Type())
+		return fmt.Errorf("cannot unmarshal float into %v", rv.Type())
 	}
-}
-
-// UnmarshalTo is an alias for Unmarshal
-func (jn *JsonNumber) UnmarshalTo(v interface{}) error {
-	return jn.Unmarshal(v)
 }
 
 // PrettyString returns a pretty-printed JSON number
-func (jn *JsonNumber) PrettyString() string {
+func (jn *JsonFloat) PrettyString() string {
 	// Check if it's an integer value
-	if jn.data == float64(int64(jn.data)) {
+	if jn.data == float64(int64(jn.data)) && jn.data > -1e12 && jn.data < 1e12 {
 		return fmt.Sprintf("%.0f", jn.data)
 	}
+	
+	// Use %g for general formatting - it will choose scientific notation when appropriate
 	return fmt.Sprintf("%g", jn.data)
 }
