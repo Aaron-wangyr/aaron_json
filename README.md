@@ -11,12 +11,35 @@ Aaron JSON is a JSON processing library designed for Go, aiming to provide a mor
 
 ## Quick Start
 
+## Installation
+
+### Option 1: From GitHub (Recommended)
+```bash
+go get -u github.com/WWWyyyrrr/aaronjson
+```
+
+### Option 2: Local Development
+```bash
+# Clone the repository
+git clone https://github.com/WWWyyyrrr/aaronjson.git
+cd aaronjson
+
+# Use as local module
+go mod tidy
+```
+
+### Option 3: As a Go Module
+Add to your `go.mod`:
+```go
+require github.com/WWWyyyrrr/aaronjson v1.0.0
+```
+
 ```go
 package main
 
 import (
     "fmt"
-    "github.com/your-username/aaron_json"
+    "github.com/WWWyyyrrr/aaronjson"
 )
 
 func main() {
@@ -28,23 +51,29 @@ func main() {
         }
     }`
     var err error
-    data, err := aaron_json.Parse(jsonStr)
+    data, err := aaronjson.Parse(jsonStr)
     if err != nil {
         panic(err)
     }
     
     // Chain-style access
-    name,err := data.Get("user","name")
-    age,err := data.Get("user","age")
-    if name.IsString(){
-        nameStr,_:=name.AsString()
-        fmt.Printf("Name: %s",nameStr)
-        fmt.Printf("Name: %s",name.String())
+    name, err := data.Get("user", "name")
+    if err != nil {
+        panic(err)
     }
-    if age.IsNumber(){
-        
+    age, err := data.Get("user", "age")
+    if err != nil {
+        panic(err)
     }
-    fmt.Printf("Name: %s, Age: %d\n", name., age)
+    
+    if name.IsString() {
+        nameStr, _ := name.AsString()
+        fmt.Printf("Name: %s\n", nameStr)
+    }
+    if age.IsInt() {
+        ageInt, _ := age.AsInt()
+        fmt.Printf("Age: %.0f\n", ageInt)
+    }
     
     // Unmarshal entire structure
     type User struct {
@@ -60,6 +89,137 @@ func main() {
     }
     
     fmt.Printf("User: %+v\n", user)
+}
+```
+
+## More Examples
+
+### Creating JSON from Go values
+
+```go
+// Create JSON from struct
+user := User{
+    Name:   "Bob",
+    Age:    25,
+    Emails: []string{"bob@example.com"},
+}
+
+jsonValue, err := aaronjson.Marshal(user)
+if err != nil {
+    panic(err)
+}
+
+fmt.Println(jsonValue.String()) // Output JSON string
+```
+
+### Working with Arrays
+
+```go
+jsonStr := `["apple", "banana", "cherry"]`
+data, _ := aaronjson.Parse(jsonStr)
+
+if data.IsArray() {
+    arr, _ := data.AsArray()
+    
+    // Access by index
+    first, _ := arr.Index(0)
+    fmt.Println(first.String()) // "apple"
+    
+    // Append new item
+    arr.Append(aaronjson.NewJsonString("date"))
+    
+    // Get length
+    fmt.Printf("Array length: %d\n", arr.Length())
+}
+```
+
+### Working with Objects
+
+```go
+data, _ := aaronjson.Parse(`{"name": "Alice", "age": 30}`)
+
+if data.IsObject() {
+    obj, _ := data.AsObject()
+    
+    // Set new key-value
+    obj.Set("city", aaronjson.NewJsonString("New York"))
+    
+    // Get all keys
+    keys := obj.Keys()
+    fmt.Printf("Keys: %v\n", keys)
+    
+    // Remove key
+    obj.Remove("age")
+}
+```
+
+## API Reference
+
+### Main Functions
+
+- `Parse(jsonStr string) (JsonValue, error)` - Parse JSON string
+- `ParseByte(jsonData []byte) (JsonValue, error)` - Parse JSON bytes  
+- `Marshal(v interface{}) (JsonValue, error)` - Convert Go value to JSON
+
+### JsonValue Interface Methods
+
+- Type checking: `IsString()`, `IsInt()`, `IsFloat()`, `IsBool()`, `IsNull()`, `IsArray()`, `IsObject()`
+- Type conversion: `AsString()`, `AsInt()`, `AsFloat()`, `AsBool()`, `AsArray()`, `AsObject()`
+- Access methods: `Get(keys ...string)`, `Index(i int)`, `Length()`, `Keys()`
+- Serialization: `String()`, `PrettyString()`, `Unmarshal(v interface{})`
+
+## Usage in Your Project
+
+Once installed, you can use it in your Go project:
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+    
+    "github.com/WWWyyyrrr/aaronjson"
+)
+
+func main() {
+    // Example: Processing API response
+    apiResponse := `{
+        "status": "success",
+        "data": {
+            "users": [
+                {"id": 1, "name": "Alice", "active": true},
+                {"id": 2, "name": "Bob", "active": false}
+            ]
+        }
+    }`
+    
+    data, err := aaronjson.Parse(apiResponse)
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // Check API status
+    status, _ := data.Get("status")
+    if status.String() == "\"success\"" {
+        fmt.Println("API call successful!")
+        
+        // Process users
+        users, _ := data.Get("data", "users")
+        if users.IsArray() {
+            userArray, _ := users.AsArray()
+            for i := 0; i < userArray.Length(); i++ {
+                user, _ := userArray.Index(i)
+                name, _ := user.Get("name")
+                active, _ := user.Get("active")
+                
+                nameStr, _ := name.AsString()
+                activeBool, _ := active.AsBool()
+                
+                fmt.Printf("User: %s, Active: %v\n", nameStr, activeBool)
+            }
+        }
+    }
 }
 ```
 
