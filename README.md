@@ -15,14 +15,14 @@ Aaron JSON is a JSON processing library designed for Go, aiming to provide a mor
 
 ### Option 1: From GitHub (Recommended)
 ```bash
-go get -u github.com/Aaron-wangyr/aaron_json
+go get -u github.com/Aaron-wangyr/aaron-json
 ```
 
 ### Option 2: Local Development
 ```bash
 # Clone the repository
-git clone https://github.com/Aaron-wangyr/aaron_json.git
-cd aaron_json
+git clone https://github.com/Aaron-wangyr/aaron-json.git
+cd aaron-json
 
 # Use as local module
 go mod tidy
@@ -31,7 +31,7 @@ go mod tidy
 ### Option 3: As a Go Module
 Add to your `go.mod`:
 ```go
-require github.com/Aaron-wangyr/aaron_json v1.0.0
+require github.com/Aaron-wangyr/aaron-json v1.0.0
 ```
 
 ```go
@@ -39,7 +39,7 @@ package main
 
 import (
     "fmt"
-    aaronjson "github.com/Aaron-wangyr/aaron_json"
+    aaronjson "github.com/Aaron-wangyr/aaron-json"
 )
 
 func main() {
@@ -179,7 +179,7 @@ import (
     "fmt"
     "log"
     
-    aaronjson "github.com/Aaron-wangyr/aaron_json"
+    aaronjson "github.com/Aaron-wangyr/aaron-json"
 )
 
 func main() {
